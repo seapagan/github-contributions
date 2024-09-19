@@ -133,50 +133,16 @@ def show_contrib(
 
         if query:
             console.print(run_query(username))
-            return
 
-        contributions = get_contributions(username)
+        contributions = fetch_contributions(username)
 
         if raw:
-            console.print(
-                json.dumps({"contributions": contributions}, indent=4)
-            )
-            return
+            display_raw(contributions, console)
 
-        if not verbose:
-            # Simple table for non-verbose output
-            table = Table(
-                title=f"Third-Party GitHub Contributions for {username}"
-            )
-            table.add_column("Repository", style="cyan")
-            table.add_column("URL", style="magenta")
-
-            for repo in contributions:
-                table.add_row(repo["name"], repo["url"])
-
-            console.print("\n", table, "\n")
+        if verbose:
+            display_verbose(contributions, console)
         else:
-            # Detailed output for verbose mode
-            for repo in contributions:
-                table = Table(expand=True)
-                table.add_column("Type", style="cyan", width=5)
-                table.add_column("Title", style="magenta", width=40)
-                table.add_column("URL", style="green")
-
-                for pr in repo["prs"]:
-                    table.add_row("PR", pr["title"], pr["url"])
-
-                for issue in repo["issues"]:
-                    table.add_row("Issue", issue["title"], issue["url"])
-
-                panel = Panel(
-                    table,
-                    title=f"[bold][cyan]Contributions to {repo['name']}",
-                    title_align="left",
-                    expand=True,
-                )
-                console.print(panel)
-                console.print()  # Add a blank line between repos
+            display_simple(username, console, contributions)
 
     except requests.HTTPError as e:
         typer.echo(f"Error: {e}", err=True)
@@ -186,6 +152,75 @@ def show_contrib(
             "your token.",
             err=True,
         )
+
+
+def display_raw(contributions: list[dict[str, Any]], console: Console) -> None:
+    """Display contributions in raw JSON format."""
+    console.print(json.dumps({"contributions": contributions}, indent=4))
+    raise typer.Exit
+
+
+def display_simple(
+    username: str, console: Console, contributions: list[dict[str, Any]]
+) -> None:
+    """Display contributions in a simple table format."""
+    console.print()
+    table = Table(expand=True)
+    table.add_column("Repository", style="cyan")
+    table.add_column("URL", style="magenta")
+
+    for repo in contributions:
+        table.add_row(repo["name"], repo["url"])
+
+    panel = Panel(
+        table,
+        title=f"Third-Party GitHub Contributions for {username}",
+        title_align="left",
+        expand=True,
+    )
+
+    console.print(panel)
+
+    raise typer.Exit
+
+
+def display_verbose(
+    contributions: list[dict[str, Any]], console: Console
+) -> None:
+    """Display detailed contributions information."""
+    console.print()
+    for repo in contributions:
+        table = Table(expand=True)
+        table.add_column("Type", style="cyan", width=5)
+        table.add_column("Title", style="magenta", width=40)
+        table.add_column("URL", style="green")
+
+        for pr in repo.get("prs", []):
+            table.add_row("PR", pr["title"], pr["url"])
+
+        for issue in repo.get("issues", []):
+            table.add_row("Issue", issue["title"], issue["url"])
+
+        panel = Panel(
+            table,
+            title=f"[bold][cyan]Contributions to {repo['name']}",
+            title_align="left",
+            expand=True,
+        )
+        console.print(panel)
+
+    raise typer.Exit
+
+
+def fetch_contributions(username: str) -> list[dict[str, Any]]:
+    """Get contributions and raise an error if none are found."""
+    contributions = get_contributions(username)
+    if not contributions:
+        typer.echo(
+            f"No third-party contributions found for {username}.", err=True
+        )
+        raise typer.Exit(1)
+    return contributions
 
 
 if __name__ == "__main__":
