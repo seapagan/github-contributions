@@ -3,6 +3,17 @@
 This is a very small example showing how to view a GitHub user's contributions
 to third-party repositories directly from your terminal.
 
+> [!NOTE]
+>
+> Due to limitations in the GitHub GraphQL API where it is not possible to
+> filter results directly by user, this application retrieves the last 100 pull
+> requests and last 50 Issues from contributed Repositories and then filters
+> them by the specified user.
+>
+> This can be slow for larger repositories. It will also mean that older
+> contributions may not be displayed on the verbose display, though they will be
+> included in the standard list.
+
 ## Features
 
 - Retrieve and display contributions to third-party repositories
