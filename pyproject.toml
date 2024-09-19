@@ -1,0 +1,66 @@
+[project]
+name = "github-contributions"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["requests>=2.32.3", "typer>=0.12.5"]
+
+[tool.uv]
+dev-dependencies = ["ruff>=0.6.5"]
+
+[tool.ruff]
+line-length = 80
+lint.select = ["ALL"] # we are being very strict!
+lint.ignore = [
+    "ANN101",
+    "ANN102",
+    "PGH003",
+    "FBT002",
+    "FBT003",
+    "B006",
+] # These rules are too strict even for us 😝
+lint.extend-ignore = [
+    "COM812",
+    "ISC001",
+] # these are ignored for ruff formatting
+
+src = ["sqliter"]
+target-version = "py39" # minimum python version supported
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
+
+[tool.ruff.lint.pep8-naming]
+classmethod-decorators = ["pydantic.validator", "pydantic.root_validator"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.extend-per-file-ignores]
+"tests/**/*.py" = [
+    "S101",    # we can (and MUST!) use 'assert' in test files.
+    "ANN001",  # annotations for fixtures are sometimes a pain for test files
+    "ARG00",   # test fixtures often are not directly used
+    "PLR2004", # magic numbers are often used in test files
+]
+
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
+[tool.mypy]
+python_version = "3.9"
+
+[[tool.mypy.overrides]]
+disable_error_code = ["method-assign", "no-untyped-def", "attr-defined"]
+module = "tests.*"
+
+[tool.pytest.ini_options]
+addopts = ["--cov", "--cov-report", "term-missing", "--cov-report", "html"]
+filterwarnings = []
+mock_use_standalone_module = true
+
+[tool.coverage.run]
+omit = ["*/tests/*"]
