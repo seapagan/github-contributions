@@ -5,6 +5,7 @@ token to authenticate with the GitHub API. The token must be stored in the
 GITHUB_TOKEN environment variable.
 """
 
+import json
 import os
 
 import requests
@@ -82,6 +83,7 @@ def get_contributions(username: str) -> list[dict[str, any]]:
         for repo in data["data"]["user"]["repositoriesContributedTo"]["nodes"]
     ]
 
+
 def run_query(username):
     headers = {"Authorization": f"Bearer {GITHUB_TOKEN}"}
     variables = {"username": username}
@@ -109,23 +111,21 @@ def main(
         help="Show detailed information including PRs and Issues",
     ),
     raw: bool = typer.Option(
-      False,
-      "--raw",
-      "-r",
-      help="Show raw output as a list of dictionaries.",
+        False,
+        "--json",
+        "-j",
+        help="Show the contribution data in JSON format.",
     ),
     query: bool = typer.Option(
-      False,
-      "--query",
-      "-q",
-      help="Show the very raw output from the GraphQL query used to retrieve the data.",
+        False,
+        "--query",
+        "-q",
+        help="Show the very raw output from the GraphQL query used to retrieve the data.",
     ),
 ) -> None:
     """Print GitHub contributions for a given user."""
     try:
         console = Console(width=120)
-
-
 
         if query:
             console.print(run_query(username))
@@ -134,7 +134,9 @@ def main(
         contributions = get_contributions(username)
 
         if raw:
-            console.print(contributions)
+            console.print(
+                json.dumps({"contributions": contributions}, indent=4)
+            )
             return
 
         if not verbose:
@@ -148,13 +150,13 @@ def main(
             for repo in contributions:
                 table.add_row(repo["name"], repo["url"])
 
-            console.print("\n",table,"\n")
+            console.print("\n", table, "\n")
         else:
             # Detailed output for verbose mode
             for repo in contributions:
                 table = Table(expand=True)
-                table.add_column("Type", style="cyan")
-                table.add_column("Title", style="magenta")
+                table.add_column("Type", style="cyan", width=5)
+                table.add_column("Title", style="magenta", width=40)
                 table.add_column("URL", style="green")
 
                 for pr in repo["prs"]:
