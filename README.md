@@ -38,6 +38,8 @@ the following command:
    uv sync
    ```
 
+This will also install the package as the `gh-tools` command-line tool.
+
 ## Usage
 
 Before running the application, you need to set up a GitHub personal access token:
@@ -52,7 +54,7 @@ Before running the application, you need to set up a GitHub personal access toke
 To run the application:
 
 ```terminal
-uv run main.py -u USERNAME
+gh-tools contrib -u USERNAME
 ```
 
 Replace `USERNAME` with the GitHub username you want to check.

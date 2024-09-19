@@ -7,6 +7,7 @@ GITHUB_TOKEN environment variable.
 
 import json
 import os
+from typing import Any
 
 import requests
 import typer
@@ -14,8 +15,10 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-app = typer.Typer()
+app = typer.Typer(add_completion=False, no_args_is_help=True)
 
+contrib_app = typer.Typer(no_args_is_help=True)
+app.add_typer(contrib_app, name="contrib")
 
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_API_URL = "https://api.github.com/graphql"
@@ -62,7 +65,7 @@ query($username: String!) {
 """
 
 
-def get_contributions(username: str) -> list[dict[str, any]]:
+def get_contributions(username: str) -> list[dict[str, Any]]:
     """Get GitHub (third party) contributions for a given user."""
     data = run_query(username)
     return [
@@ -84,7 +87,8 @@ def get_contributions(username: str) -> list[dict[str, any]]:
     ]
 
 
-def run_query(username):
+def run_query(username: str) -> dict[str, Any]:
+    """Return the response from the GitHub GraphQL API."""
     headers = {"Authorization": f"Bearer {GITHUB_TOKEN}"}
     variables = {"username": username}
     response = requests.post(
@@ -94,12 +98,12 @@ def run_query(username):
         timeout=10,
     )
     response.raise_for_status()
-    data = response.json()
-    return data
+    result: dict[str, Any] = response.json()
+    return result
 
 
-@app.command()
-def main(
+@contrib_app.callback(invoke_without_command=True)
+def show_contrib(
     username: str = typer.Option(
         ..., "--username", "-u", help="GitHub username"
     ),
@@ -120,7 +124,7 @@ def main(
         False,
         "--query",
         "-q",
-        help="Show the very raw output from the GraphQL query used to retrieve the data.",
+        help="Show the raw output from the GitHub GraphQL query.",
     ),
 ) -> None:
     """Print GitHub contributions for a given user."""
