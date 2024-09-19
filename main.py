@@ -15,6 +15,7 @@ from rich.table import Table
 
 app = typer.Typer()
 
+
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_API_URL = "https://api.github.com/graphql"
 
@@ -62,6 +63,26 @@ query($username: String!) {
 
 def get_contributions(username: str) -> list[dict[str, any]]:
     """Get GitHub (third party) contributions for a given user."""
+    data = run_query(username)
+    return [
+        {
+            "name": repo["nameWithOwner"],
+            "url": repo["url"],
+            "prs": [
+                {"title": pr["title"], "url": pr["url"]}
+                for pr in repo["pullRequests"]["nodes"]
+                if pr["author"] and pr["author"]["login"] == username
+            ],
+            "issues": [
+                {"title": issue["title"], "url": issue["url"]}
+                for issue in repo["issues"]["nodes"]
+                if issue["author"] and issue["author"]["login"] == username
+            ],
+        }
+        for repo in data["data"]["user"]["repositoriesContributedTo"]["nodes"]
+    ]
+
+def run_query(username):
     headers = {"Authorization": f"Bearer {GITHUB_TOKEN}"}
     variables = {"username": username}
     response = requests.post(
@@ -72,23 +93,7 @@ def get_contributions(username: str) -> list[dict[str, any]]:
     )
     response.raise_for_status()
     data = response.json()
-    return [
-        {
-            "name": repo["nameWithOwner"],
-            "url": repo["url"],
-            "prs": [
-                {"title": pr["title"], "url": pr["url"]}
-                for pr in repo["pullRequests"]["nodes"]
-                if pr["author"]["login"] == username
-            ],
-            "issues": [
-                {"title": issue["title"], "url": issue["url"]}
-                for issue in repo["issues"]["nodes"]
-                if issue["author"]["login"] == username
-            ],
-        }
-        for repo in data["data"]["user"]["repositoriesContributedTo"]["nodes"]
-    ]
+    return data
 
 
 @app.command()
@@ -103,12 +108,34 @@ def main(
         "-v",
         help="Show detailed information including PRs and Issues",
     ),
+    raw: bool = typer.Option(
+      False,
+      "--raw",
+      "-r",
+      help="Show raw output as a list of dictionaries.",
+    ),
+    query: bool = typer.Option(
+      False,
+      "--query",
+      "-q",
+      help="Show the very raw output from the GraphQL query used to retrieve the data.",
+    ),
 ) -> None:
     """Print GitHub contributions for a given user."""
     try:
+        console = Console(width=120)
+
+
+
+        if query:
+            console.print(run_query(username))
+            return
+
         contributions = get_contributions(username)
 
-        console = Console(width=120)
+        if raw:
+            console.print(contributions)
+            return
 
         if not verbose:
             # Simple table for non-verbose output
