@@ -9,6 +9,8 @@ import os
 
 import requests
 import typer
+from rich.console import Console
+from rich.table import Table
 
 app = typer.Typer()
 
@@ -57,9 +59,20 @@ def main(
     """Print GitHub contributions for a given user."""
     try:
         contributions = get_contributions(username)
-        typer.echo(f"\nThird-Party GitHub Contributions for {username}:")
+
+        # Create a Rich Table
+        table = Table(title=f"Third-Party GitHub Contributions for {username}")
+        table.add_column("Repository", style="cyan")
+        table.add_column("URL", style="magenta")
+
+        # Add rows to the table
         for repo in contributions:
-            typer.echo(f"- {repo['name']} ({repo['url']})")
+            table.add_row(repo["name"], repo["url"])
+
+        # Create a console and print the table
+        console = Console()
+        console.print("\n", table, "\n")
+
     except requests.HTTPError as e:
         typer.echo(f"Error: {e}", err=True)
     except KeyError:
