@@ -1,7 +1,9 @@
-# GitHub Contributions Viewer
+# GitHub Contributions Viewer <!-- omit in toc -->
 
 This is a very small example showing how to view a GitHub user's contributions
-to third-party repositories directly from your terminal.
+to third-party repositories directly from your terminal. Perhaps in the future
+this could be expanded to include more features, but for now it is a simple
+example.
 
 > [!NOTE]
 >
@@ -13,6 +15,11 @@ to third-party repositories directly from your terminal.
 > This can be slow for larger repositories. It will also mean that older
 > contributions may not be displayed on the verbose display, though they will be
 > included in the standard list.
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [License](#license)
 
 ## Features
 
@@ -29,22 +36,43 @@ to third-party repositories directly from your terminal.
    cd github-contributions
    ```
 
-2. Install the required dependencies. We use
-[uv](https://github.com/astral-sh/uv) to manage the dependencies and virtual
-environment. To install the dependencies and create a virtual environment, run
-the following command:
+2. Install the required dependencies.
+   - We use [uv](https://github.com/astral-sh/uv) to manage the dependencies
+and virtual environment. To install the dependencies and create a virtual
+environment, run the following command:
 
-   ```terminal
-   uv sync
-   ```
+      ```terminal
+      uv sync
+      ```
 
-This will also install the package as the `gh-tools` command-line tool.
+      This will also install the package **LOCALLY** as the `gh-tools`
+      command-line tool - in other words only available when you are in the
+      activated virtual environment.
+
+      If you don't have `uv` installed, you can install it first using `pipx`
+      (preferred) or `pip`:
+
+      ```terminal
+      pip install uv
+      ```
+
+   - If you prefer to use `pip` directly, you can install the dependencies into
+     your **current virtual environment** using:
+
+      ```terminal
+      pip install -r requirements.txt
+      ```
+
+      It is generally **not recommended** to install packages outside of a
+      virtual environment unless you are happy to have your global Python
+      environment modified.
 
 ## Usage
 
 Before running the application, you need to set up a GitHub personal access token:
 
-1. Create a personal access token on GitHub (Settings -> Developer settings -> Personal access tokens)
+1. Create a personal access token on GitHub (Settings -> Developer settings ->
+   Personal access tokens)
 2. Set the token as an environment variable:
 
    ```terminal
@@ -56,6 +84,15 @@ To run the application:
 ```terminal
 gh-tools contrib -u USERNAME
 ```
+
+> [!NOTE]
+>
+> If you have installed this using app `pip` directly, you will need to run the
+> application as below instead of `gh-tools`:
+>
+> ```terminal
+> python src/main.py contrib -u USERNAME
+> ```
 
 Replace `USERNAME` with the GitHub username you want to check.
 
