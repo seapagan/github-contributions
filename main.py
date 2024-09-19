@@ -96,6 +96,7 @@ def main(
     username: str = typer.Option(
         ..., "--username", "-u", help="GitHub username"
     ),
+    *,
     verbose: bool = typer.Option(
         False,
         "--verbose",
@@ -107,7 +108,7 @@ def main(
     try:
         contributions = get_contributions(username)
 
-        console = Console()
+        console = Console(width=120)
 
         if not verbose:
             # Simple table for non-verbose output
@@ -120,11 +121,11 @@ def main(
             for repo in contributions:
                 table.add_row(repo["name"], repo["url"])
 
-            console.print(table)
+            console.print("\n",table,"\n")
         else:
             # Detailed output for verbose mode
             for repo in contributions:
-                table = Table(title=f"{repo['name']}")
+                table = Table(expand=True)
                 table.add_column("Type", style="cyan")
                 table.add_column("Title", style="magenta")
                 table.add_column("URL", style="green")
@@ -137,8 +138,9 @@ def main(
 
                 panel = Panel(
                     table,
-                    title=f"Contributions to {repo['name']}",
-                    expand=False,
+                    title=f"[bold][cyan]Contributions to {repo['name']}",
+                    title_align="left",
+                    expand=True,
                 )
                 console.print(panel)
                 console.print()  # Add a blank line between repos
