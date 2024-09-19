@@ -30,7 +30,7 @@ query($username: String!) {
         nameWithOwner
         url
         pullRequests(
-            first: 5,
+            first: 100,
             orderBy: {field: CREATED_AT, direction: DESC},
             states: [OPEN, MERGED]) {
           nodes {
@@ -42,7 +42,7 @@ query($username: String!) {
           }
         }
         issues(
-            first: 5,
+            first: 50,
             orderBy: {field: CREATED_AT, direction: DESC},
             states: [OPEN, CLOSED]) {
           nodes {
