@@ -10,6 +10,7 @@ import os
 import requests
 import typer
 from rich.console import Console
+from rich.panel import Panel
 from rich.table import Table
 
 app = typer.Typer()
@@ -18,16 +19,40 @@ GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_API_URL = "https://api.github.com/graphql"
 
 QUERY = """
-{
-  user(login: "%s") {
+query($username: String!) {
+  user(login: $username) {
     repositoriesContributedTo(
       first: 100,
       contributionTypes: [COMMIT, ISSUE, PULL_REQUEST, REPOSITORY],
       includeUserRepositories: false
-      ) {
+    ) {
       nodes {
         nameWithOwner
         url
+        pullRequests(
+            first: 5,
+            orderBy: {field: CREATED_AT, direction: DESC},
+            states: [OPEN, MERGED]) {
+          nodes {
+            title
+            url
+            author {
+              login
+            }
+          }
+        }
+        issues(
+            first: 5,
+            orderBy: {field: CREATED_AT, direction: DESC},
+            states: [OPEN, CLOSED]) {
+          nodes {
+            title
+            url
+            author {
+              login
+            }
+          }
+        }
       }
     }
   }
@@ -35,17 +60,33 @@ QUERY = """
 """
 
 
-def get_contributions(username: str) -> list[dict[str, str]]:
+def get_contributions(username: str) -> list[dict[str, any]]:
     """Get GitHub (third party) contributions for a given user."""
     headers = {"Authorization": f"Bearer {GITHUB_TOKEN}"}
-    query = QUERY % username
+    variables = {"username": username}
     response = requests.post(
-        GITHUB_API_URL, json={"query": query}, headers=headers, timeout=10
+        GITHUB_API_URL,
+        json={"query": QUERY, "variables": variables},
+        headers=headers,
+        timeout=10,
     )
     response.raise_for_status()
     data = response.json()
     return [
-        {"name": repo["nameWithOwner"], "url": repo["url"]}
+        {
+            "name": repo["nameWithOwner"],
+            "url": repo["url"],
+            "prs": [
+                {"title": pr["title"], "url": pr["url"]}
+                for pr in repo["pullRequests"]["nodes"]
+                if pr["author"]["login"] == username
+            ],
+            "issues": [
+                {"title": issue["title"], "url": issue["url"]}
+                for issue in repo["issues"]["nodes"]
+                if issue["author"]["login"] == username
+            ],
+        }
         for repo in data["data"]["user"]["repositoriesContributedTo"]["nodes"]
     ]
 
@@ -55,23 +96,52 @@ def main(
     username: str = typer.Option(
         ..., "--username", "-u", help="GitHub username"
     ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Show detailed information including PRs and Issues",
+    ),
 ) -> None:
     """Print GitHub contributions for a given user."""
     try:
         contributions = get_contributions(username)
 
-        # Create a Rich Table
-        table = Table(title=f"Third-Party GitHub Contributions for {username}")
-        table.add_column("Repository", style="cyan")
-        table.add_column("URL", style="magenta")
-
-        # Add rows to the table
-        for repo in contributions:
-            table.add_row(repo["name"], repo["url"])
-
-        # Create a console and print the table
         console = Console()
-        console.print("\n", table, "\n")
+
+        if not verbose:
+            # Simple table for non-verbose output
+            table = Table(
+                title=f"Third-Party GitHub Contributions for {username}"
+            )
+            table.add_column("Repository", style="cyan")
+            table.add_column("URL", style="magenta")
+
+            for repo in contributions:
+                table.add_row(repo["name"], repo["url"])
+
+            console.print(table)
+        else:
+            # Detailed output for verbose mode
+            for repo in contributions:
+                table = Table(title=f"{repo['name']}")
+                table.add_column("Type", style="cyan")
+                table.add_column("Title", style="magenta")
+                table.add_column("URL", style="green")
+
+                for pr in repo["prs"]:
+                    table.add_row("PR", pr["title"], pr["url"])
+
+                for issue in repo["issues"]:
+                    table.add_row("Issue", issue["title"], issue["url"])
+
+                panel = Panel(
+                    table,
+                    title=f"Contributions to {repo['name']}",
+                    expand=False,
+                )
+                console.print(panel)
+                console.print()  # Add a blank line between repos
 
     except requests.HTTPError as e:
         typer.echo(f"Error: {e}", err=True)
