@@ -11,7 +11,25 @@ dependencies = [
 ]
 
 [tool.uv]
-dev-dependencies = ["ruff>=0.6.5"]
+    "poethepoet>=0.28.0",
+[tool.poe.tasks]
+pre.cmd = "pre-commit run --all-files"
+pre.help = "Run pre-commit checks"
+
+mypy.cmd = "mypy . --strict"
+mypy.help = "Run mypy checks"
+format.help = "Format code with Ruff"
+format.cmd = "ruff format ."
+ruff.help = "Run Ruff checks"
+ruff.cmd = "ruff check --output-format=concise ."
+
+test.help = "Run tests using Pytest"
+test.cmd = "pytest"
+"test:watch".cmd = "ptw . --now --clear"
+"test:watch".help = "Run tests using Pytest in watch mode"
+
+changelog.cmd = "github-changelog-md"
+changelog.help = "Generate a changelog"
 
 [tool.ruff]
 line-length = 80
